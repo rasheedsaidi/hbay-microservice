@@ -10,7 +10,7 @@ chai.use(chaiHttp);
 
 let assert = require('assert');
 describe('User', () => {
-  beforeEach( done => {
+  before( done => {
     User.remove({}, (err) => {
       done();
     })
@@ -41,7 +41,7 @@ describe('User', () => {
         .end( (err, res) => {
           res.should.have.status(200);
           res.body.should.be.a('object');
-          res.body.should.have.property('error').eql('false');
+          res.body.should.have.property('error').eql(false);
           res.body.should.have.property('reply').eql('Login successful');
           done();
         })

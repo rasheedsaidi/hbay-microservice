@@ -19,4 +19,6 @@ router.get('/', function(req, res, next) {
 
 router.post('/create', userController.create);
 
+router.post('/login', userController.authenticate);
+
 module.exports = router
