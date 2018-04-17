@@ -5,6 +5,8 @@ let chai = require('chai');
 let chaiHttp = require('chai-http');
 let app = require('../app');
 let should = chai.should();
+let verifyToken = require('../models/user/verifyToken');
+let expect = require('expect.js');
 
 chai.use(chaiHttp);
 
@@ -25,7 +27,6 @@ describe('User', () => {
           res.should.have.status(200);
           res.body.should.be.a('object');
           res.body.should.have.property('reply').eql('User was saved successfully!');
-          //res.should.have.property('text').contains("");
           done();
         });
     });
@@ -43,8 +44,37 @@ describe('User', () => {
           res.body.should.be.a('object');
           res.body.should.have.property('error').eql(false);
           res.body.should.have.property('reply').eql('Login successful');
+          res.body.should.have.property('token');
           done();
         })
     });
-  })
+  });
+
+  describe('/verifyToken', () => {
+    let mockReq = {
+      headers:{} // your JWT here
+    }
+    res = {
+      send: function(){ },
+      json: function(err){
+         
+      },
+      status: function(code) {
+          $d = 'status${code}';
+          // This next line makes it chainable
+          return this; 
+      }
+    }
+    let mockRes = {};
+    mockRes.status = (code) => { return 'status${code}' };
+    
+    let nextCalled = false;
+    let next = function(){nextCalled = true}
+  
+    it('should pass on right jwt',() => {
+      mockReq.headers['JWT'] = 'testtoken'
+      verifyToken(mockReq, res, next)
+      expect(nextCalled).to.be.true;
+    });
+  });
 });
