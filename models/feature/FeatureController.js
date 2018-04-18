@@ -1,64 +1,77 @@
 let bcrypt = require('bcryptjs');
 let config = require('../../config');
 let jwt = require('jsonwebtoken');
+let request = require('request');
+var validUrl = require('valid-url');
+const fs = require('fs');
+var sharp = require('sharp');
+var jsonpatch = require('fast-json-patch');
+const { createLogger, format, transports } = require('winston');
+const logger = createLogger({
+  format: format.combine(
+    format.splat(),
+    format.simple()
+  ),
+  transports: [new transports.Console()]
+});
 
-let User = require('./user');
 
 let create = (req, res) => {
-    let user = new User({
-        username: req.body.username,
-        password: bcrypt.hashSync(req.body.password, 8)
-    });
+    let json_patch = req.body.json_patch;
+    let json_object = req.body.json_object;
 
-    user.save( (err, auth) => {
-        if(err) {
-            res.send(err);
-        } else {
-            console.log(auth)
-            res.send({reply: "User was saved successfully!", auth});
-        }
-        
+    if(!json_patch || !json_object) {
+        return res.json({error: true, reply: "Json patch and Json object are required"});
+    }
+
+    var errors = jsonpatch.validate(json_patch, json_object);
+    
+    if (errors && errors.length != 0) { 
+      logger.info(json_patch, errors);
+      return res.status(403).json({error: true, reply: errors.name});
+    }
+
+    patch_object = jsonpatch.applyPatch(json_object, json_patch).newDocument;
+
+    res.json({error: false, reply: "JSON Object was patched successfully!", patch: patch_object});       
+}
+
+let thumbnail = (req, res) => {    
+    let url = req.body.image_url;
+
+    if (!validUrl.isUri(url)){
+        return res.status(403).json({error: true, reply: "Image url is required"});
+    }
+
+    let base = __dirname + '/thumbnails/';
+    let file = getFilename(url);
+    let filename = require('path').resolve(base + '../../../thumbnails/temp/' + file);
+    let dest = require('path').resolve(base + '../../../thumbnails/' + file);
+    
+    download(url, filename, () => {
+        sharp(filename)
+        .resize(50, 50)
+        .toFile(dest, function(err) {
+          if(err) throw err;
+
+          return res.json({error: false, reply: "Image converted successfully", thumbnail: dest});
+        });        
     });
 }
 
-let authenticate = (req, res) => {
-    if(!req.body) {
-        res.send({error: true, reply: "Empty POST body"});
-    }
-    if(!req.body.username || !req.body.password) {
-        res.send({error: true, reply: "Username and password must be supplied"});
-    }
-    User.findOne({
-        username: req.body.username
-    }, (err, user) => {
-        if(err) {
-            throw err;
-        }
-
-        if(!user) {
-            res.send({error: true, reply: "Login failed. User not found"});
-        } else {
-            var isValid = bcrypt.compareSync(req.body.password, user.password);
-            if (!isValid) {
-                return res.status(401).send({ error: true, reply: "Login failed. Password is invalid", token: null });
-            } else {
-                let payload = {
-                    username: user.username
-                };
-        
-                var token = jwt.sign(payload, config.secret, {
-                    expiresIn: 86400 // expires in 24 hours
-                });
-        
-                res.send({
-                    error: false,
-                    reply: "Login successful",
-                    token: token
-                });
-            }
-        }
-
+let download = (uri, filename, callback) => {
+    request.head(uri, function(err, res, body){  
+      request(uri).pipe(fs.createWriteStream(filename)).on('close', callback);
     });
+};
+
+let getFilename = (url) => {
+    let link = url.split('.');
+    let ext = link[link.length - 1];
+    let timestamp = Date.now();
+
+    return timestamp + '.' + ext;
 }
 
-module.exports = { create, authenticate };
+
+module.exports = { create, thumbnail };
