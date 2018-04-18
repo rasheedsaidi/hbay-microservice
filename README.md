@@ -57,6 +57,9 @@ Sample request body = {image_url: url}
 With required headers {'x-access-token': token_from_login}
 Sample response: {error: false, reply: "Image converted successfully", thumbnail: destination_url}
 ```
+# Dependency
+This microservice stores auth users in MongoDB database. So ensure MongoDB is installed and running on port:27017. Or you may adjust the port in the root/routes/users.js file.
+
 # Unit Testing
 In order to run the unit tests, execute the command below:<br><br>
 **npm test**
