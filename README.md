@@ -45,6 +45,7 @@ let patch = [
     { "op": "replace", "path": "/baz", "value": "boo" }
 ];
 Sample request body = {json_object: obj, json_patch: patch}
+With required headers {'x-access-token': token_from_login}
 Sample response: {error: false, reply: "JSON Object was patched successfully!", patch: {"baz": "boo", "foo": "bar"}
 ```
 ## Generating 50 x 50 px thumbnails
@@ -53,6 +54,7 @@ Send a post request to the endpoint: /api/v1/thumbnail/create:<br>
 POST to '/api/v1/thumbnail/create'
 let url = PUBLIC_IMAGE_URL;
 Sample request body = {image_url: url}
+With required headers {'x-access-token': token_from_login}
 Sample response: {error: false, reply: "Image converted successfully", thumbnail: destination_url}
 ```
 # Unit Testing
